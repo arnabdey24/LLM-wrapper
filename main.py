@@ -9,6 +9,10 @@ import io
 import base64
 import logging
 import os
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -52,12 +56,23 @@ async def load_model():
     
     try:
         # Optimize for M4 MacBook Pro
-        if torch.backends.mps.is_available():
-            device = torch.device("mps")
-            logger.info("Using MPS (Metal Performance Shaders) for M4 optimization")
-        else:
+        logger.info(f"PyTorch version: {torch.__version__}")
+        logger.info(f"MPS available: {torch.backends.mps.is_available()}")
+        logger.info(f"MPS built: {torch.backends.mps.is_built()}")
+        
+        # Try to use MPS, fall back to CPU if there are issues
+        try:
+            if torch.backends.mps.is_available():
+                device = torch.device("mps")
+                # Test MPS with a simple tensor operation
+                test_tensor = torch.randn(1, 1).to(device)
+                logger.info("Using MPS (Metal Performance Shaders) for M4 optimization")
+            else:
+                device = torch.device("cpu")
+                logger.info("MPS not available, using CPU")
+        except Exception as e:
+            logger.warning(f"MPS initialization failed: {e}, falling back to CPU")
             device = torch.device("cpu")
-            logger.info("MPS not available, using CPU")
         
         # Use Microsoft's DialoGPT or Phi-2 as alternatives to gated Gemma
         # These are open models that work well for text generation
